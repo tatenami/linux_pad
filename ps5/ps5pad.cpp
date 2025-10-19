@@ -1,5 +1,4 @@
 #include "ps5pad.hpp"
-#include <limits>
 
 namespace pad {
   namespace ps5 {

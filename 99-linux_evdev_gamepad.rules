@@ -1,0 +1,25 @@
+# for DualSense
+## usb
+SUBSYSTEM=="input", KERNEL=="event*", \
+ENV{ID_INPUT_JOYSTICK}=="1", \
+ATTRS{name}=="Sony Interactive Entertainment DualSense Wireless Controller", \
+SYMLINK+="evdev_dualsense_usb"
+
+## bluetooth
+SUBSYSTEM=="input", KERNEL=="event*", \
+ENV{ID_INPUT_JOYSTICK}=="1", \
+ATTRS{name}=="DualSense Wireless Controller", \
+SYMLINK+="evdev_dualsense_bt"
+
+# for Nintendo Pro Controller
+## usb
+SUBSYSTEM=="input", KERNEL=="event*", \
+ENV{ID_INPUT_JOYSTICK}=="1", \
+ATTRS{name}=="Nintendo Co., Ltd. Pro Controller", \
+SYMLINK+="evdev_procon_usb"
+
+## bluetooth
+SUBSYSTEM=="input", KERNEL=="event*", \
+ENV{ID_INPUT_JOYSTICK}=="1", \
+ATTRS{name}=="Pro Controller", \
+SYMLINK+="evdev_procon_bt"

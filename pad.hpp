@@ -14,7 +14,7 @@ namespace pad {
             int axis_num = default_axis_num):
       BasePad<Handler>(devfile_path, button_num, axis_num)
     {
-      // this->handler_ = std::make_unique<Handler>();
+      
     }
 
     void update() {

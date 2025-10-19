@@ -1,13 +1,14 @@
 #ifndef ProController_H
 #define ProController_H
 
-#include "pad/pad.hpp"
+#include "pad.hpp"
 
 namespace pad {
 
   namespace procon {
     
-    const std::string usb_name = "\"Nintendo Co., Ltd. Pro Controller\"";
+    const std::string evdev_procon_usb = "/dev/evdev_procon_usb";
+    const std::string evdev_procon_bt  = "/dev/evdev_procon_bt";    
     
     namespace dev {
       const int button_num = 18;

@@ -7,10 +7,10 @@
 #include <linux/input.h>
 #include <sys/ioctl.h>
 
-#include <fstream>
 #include <string>
-#include <regex>
+#include <memory>
 #include <cmath>
+#include <limits>
 #include <unordered_map>
 #include <vector>
 #include <type_traits>
