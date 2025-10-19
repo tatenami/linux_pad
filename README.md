@@ -76,3 +76,6 @@ int main() {
 g++ -o main main.cpp -lgamepad
 ```
 `-lgamepad` のリンクオプションにより，共有ライブラリをリンクする必要がある
+
+## 備考
+ - その他コントローラの追加を予定
