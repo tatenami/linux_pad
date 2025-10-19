@@ -13,7 +13,7 @@
 #include <cmath>
 #include <unordered_map>
 #include <vector>
-#include <concepts>
+#include <type_traits>
 
 namespace pad {
 
@@ -40,16 +40,14 @@ namespace pad {
    */
   class PadReader {
    private:
-    std::string path = "/dev/input/";
+    std::string path;
 
     bool connection_;
     int  fd_{-1};
     input_event raw_event_;
     PadEvent    event_;
 
-    void searchDeviceName(std::string devname, std::ifstream& stream);
-    void searchDeviceFile(std::ifstream& stream);
-    void openDeviceFile();
+    bool openDeviceFile(std::string devfile_path);
 
    public:
     ~PadReader();
@@ -89,14 +87,8 @@ namespace pad {
    protected:
     code_id_map id_map_;
     PadEvent    event_;
-    ButtonEvent button_event_ = {
-      .id = 0,
-      .state = false
-    };
-    AxisEvent axis_event_ = {
-      .id = 0,
-      .value = 0.0f
-    };
+    ButtonEvent button_event_ = {.id = 0, .state = false};
+    AxisEvent axis_event_ = {.id = 0, .value = 0.0f};
     float deadzone_{default_deadzone};
 
     virtual void handleButtonEvent() = 0;
@@ -104,7 +96,6 @@ namespace pad {
 
    public:
     void handleEvent(PadReader& reader);
-    void addCodeIdEntry(uint event_code, uint8_t ui_id);
     void setDeadZone(float deadzone);
 
     inline EventType getEventType() { 
@@ -191,11 +182,9 @@ namespace pad {
     }
   };  
 
-  // PadEventHandler を継承しているテンプレート制約の concept
-  template <typename T>
-  concept PadHandlerType = std::derived_from<T, PadEventHandler>;
-
-  template <PadHandlerType Handler>
+  // テンプレートクラスが PadEventHandler を継承している制約
+  template<typename Handler, 
+    typename = std::enable_if_t<std::is_base_of<PadEventHandler, Handler>::value>>
   class BasePad {
    protected:
     std::unique_ptr<PadEventHandler> handler_;
@@ -203,18 +192,18 @@ namespace pad {
     ButtonData  buttons_;
     AxisData    axes_;
     bool is_connected_{false};
-    std::string device_name_;
+    std::string devfile_path_;
 
    public:
-    BasePad(std::string device_name, 
+    BasePad(std::string devfile_path, 
             int button_num = default_button_num, 
             int axis_num = default_axis_num):
       buttons_(button_num),
       axes_(axis_num)
     {
-      this->device_name_ = device_name;
+      this->devfile_path_ = devfile_path;
       this->handler_ = std::make_unique<Handler>();
-      this->is_connected_ = this->reader_.connect(device_name);
+      this->is_connected_ = this->reader_.connect(devfile_path);
     }
 
     ~BasePad() {
@@ -231,7 +220,7 @@ namespace pad {
       }
 
       this->reader_.disconnect();
-      return this->reader_.connect(this->device_name_);
+      return this->reader_.connect(this->devfile_path_);
     }
     
     void setDeadZone(float deadzone) {

@@ -1,0 +1,6 @@
+# for DualSense
+SUBSYSTEM=="input", \
+KERNEL=="event*", \
+ENV{ID_INPUT_JOYSTICK}=="1", \
+ATTRS{name}=="Sony Interactive Entertainment DualSense Wireless Controller", \
+SYMLINK+="evdev_dualsense_usb"

@@ -1,14 +1,14 @@
 #include "procon.hpp"
 
-namespace {
-  // 内部でのみ使用するAxisID
-  constexpr uint8_t internal_axis_crossX = 4;
-  constexpr uint8_t internal_axis_crossY = 5;
-}
-
 namespace pad {
   
   namespace procon {
+
+    namespace {
+      // 内部でのみ使用するAxisID
+      constexpr uint8_t internal_axis_crossX = 4;
+      constexpr uint8_t internal_axis_crossY = 5;
+    }
 
     ProControllerHandler::ProControllerHandler() {
       id_map_ = code_id_map {

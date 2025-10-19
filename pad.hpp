@@ -5,15 +5,16 @@
 
 namespace pad {
 
-  template <PadHandlerType Handler>
+  template <typename Handler,
+    typename = std::enable_if_t<std::is_base_of<PadEventHandler, Handler>::value>>
   class GamePad: public BasePad<Handler> {
    public:
-    GamePad(std::string device_name,
+    GamePad(std::string devfile_path,
             int button_num = default_button_num, 
             int axis_num = default_axis_num):
-      BasePad<Handler>(device_name, button_num, axis_num)
+      BasePad<Handler>(devfile_path, button_num, axis_num)
     {
-      this->handler_ = std::make_unique<Handler>();
+      // this->handler_ = std::make_unique<Handler>();
     }
 
     void update() {
@@ -21,7 +22,7 @@ namespace pad {
       BasePad<Handler>::update();
     }
 
-    inline bool pressed(uint8_t id) {
+    inline bool press(uint8_t id) {
       return this->buttons_.getState(id);
     }
 

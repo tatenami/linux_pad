@@ -1,13 +1,14 @@
 #ifndef PS5_BASE_H
 #define PS5_BASE_H
 
-#include "pad/pad.hpp"
+// #include "pad/pad.hpp"
+#include "../pad.hpp"
 
 namespace pad {
 
   namespace ps5 {
-    const std::string usb_name = "\"Sony Interactive Entertainment DualSense Wireless Controller\"";
-    const std::string bluetooth_name = "\"DualSense Wireless Controller\"";
+    const std::string evdev_symlink_usb = "/dev/evdev_dualsense_usb";
+    const std::string evdev_symlink_bt  = "/dev/evdev_dualsense_bt";
 
     namespace dev {
       constexpr uint8_t num_buttons = 17;

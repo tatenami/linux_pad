@@ -1,16 +1,15 @@
 #include "ps5pad.hpp"
 #include <limits>
 
-namespace {
-  // 内部でのみ使用するAxisID
-  constexpr uint8_t internal_axis_crossX = 6;
-  constexpr uint8_t internal_axis_crossY = 7;
-}
-
 namespace pad {
   namespace ps5 {
-    PS5Handler::PS5Handler() {
+    namespace {
+      // 内部でのみ使用するAxisID
+      constexpr uint8_t internal_axis_crossX = 6;
+      constexpr uint8_t internal_axis_crossY = 7;
+    }
 
+    PS5Handler::PS5Handler() {
       id_map_ = code_id_map {
         // for Button
         {BTN_SOUTH,  ButtonID::cross},

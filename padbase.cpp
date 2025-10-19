@@ -2,10 +2,6 @@
 #include <cstdio>
 #include <cmath>
 
-namespace {
-  const std::string devlist_path = "/proc/bus/input/devices";
-}
-
 namespace pad {
   /**
    * @brief Destroy the Pad Reader
@@ -14,62 +10,17 @@ namespace pad {
   PadReader::~PadReader() { disconnect(); }
 
   /**
-   * @brief search target device-name in `/proc/bus/input/devices`
-   * 
-   * @param devname target device name in `/proc/bus/input/devices`
-   * @param stream ifstream of `/proc/bus/input/devices`
-   */
-  void PadReader::searchDeviceName(std::string devname, std::ifstream& stream) {
-    bool is_found = false;
-    std::string buf;
-
-    while (std::getline(stream, buf)) {
-      if (buf.find(devname) != std::string::npos) {
-        is_found = true;
-        break;
-      }
-    }
-
-    if (!is_found) {
-      throw std::string("Faild to find device name");
-    }
-  }
-
-  /**
-   * @brief search device file of target device in `/proc/bus/input/devices`
-   * 
-   * @param stream ifstream of `/proc/bus/input/devices`
-   */
-  void PadReader::searchDeviceFile(std::ifstream& stream) {
-    std::string buf;
-    std::regex  regex_devfile(R"(event(\d+))");
-    std::smatch smatch;
-
-    // search device file name
-    while (std::getline(stream, buf)) {
-      if (buf.find("Handlers=") != std::string::npos) break;
-    }
-
-    // select device file [ event? ]
-    if (std::regex_search(buf, smatch, regex_devfile)) {
-      this->path += smatch[0].str();
-    }
-    else {
-      throw std::string("Failed find device file");
-    }
-  }
-
-  /**
    * @brief open device file of target device ( /dev/eventX )
    * 
    */
-  void PadReader::openDeviceFile() {
+  bool PadReader::openDeviceFile(std::string devfile_path) {
     // read only, non blocking mode 
-    this->fd_ = open(path.c_str(), O_RDONLY | O_NONBLOCK);
+    this->fd_ = open(devfile_path.c_str(), O_RDONLY | O_NONBLOCK);
 
-    if (this->fd_ == -1) {
-      throw std::string("Faild to open device file");
-    }
+    if (fd_ < 0)
+      return false;
+    else 
+      return true;
   }
 
   /**
@@ -85,21 +36,11 @@ namespace pad {
    * @retval `true`: succeed in opening device file and ready to read
    * @retval `false`: fail to searching or opening device file
    */
-  bool PadReader::connect(std::string devname) {
-    std::ifstream read_stream(devlist_path);
+  bool PadReader::connect(std::string devfile_path) {
     bool is_readable = false;
     connection_ = false;
 
-    try {
-      searchDeviceName(devname, read_stream);
-      searchDeviceFile(read_stream);
-      openDeviceFile();
-      is_readable = true; 
-    }
-    catch (std::string msg) {
-      std::printf("[ERROR] %s\n", msg.c_str());
-      return false;
-    }
+    is_readable = openDeviceFile(devfile_path);
 
     connection_ = is_readable;
     event_ = {
@@ -108,7 +49,6 @@ namespace pad {
       .value = 0
     };
 
-    read_stream.close();
     return is_readable;
   }
 
@@ -142,10 +82,6 @@ namespace pad {
 
       return false;
     }   
-  }
-
-  void PadEventHandler::addCodeIdEntry(uint event_code, uint8_t ui_id) {
-    this->id_map_[event_code] = ui_id;
   }
 
   void PadEventHandler::setDeadZone(float deadzone) {
