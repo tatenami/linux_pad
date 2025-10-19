@@ -1,5 +1,0 @@
-/usr/local/include/pad/pad.hpp
-/usr/local/include/pad/padbase.hpp
-/usr/local/include/pad/ps5pad.hpp
-/usr/local/include/pad/procon.hpp
-/usr/local/lib/libgamepad.so
