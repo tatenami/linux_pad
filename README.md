@@ -40,9 +40,9 @@ using namespace pad;
 using namespace std;
 
 int main() {
-  // テンプレートにコントローラに対応したハンドラの型を指定
+  // GamePad クラスのテンプレートにはコントローラに対応したハンドラの型を指定
   // デバイスファイルのパスを引数として初期化
-  //   /dev/input/eventX でも可
+  //   /dev/input/eventX 直接指定でも可
   GamePad<ps5::PS5Handler> ps5(ps5::evdev_symlink_usb);
 
   if (!ps5.isConnected()) {
