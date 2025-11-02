@@ -1,7 +1,7 @@
 #ifndef ProController_H
 #define ProController_H
 
-#include "pad.hpp"
+#include "gamepad.hpp"
 
 namespace pad {
 
