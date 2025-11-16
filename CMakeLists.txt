@@ -7,7 +7,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message("[INFO] install dir: ${CMAKE_INSTALL_PREFIX}")
 
 # ヘッダファイルの変数定義
-set(PAD_HEADERS gamepad.hpp)
+set(PAD_HEADERS 
+  event_types.hpp
+  event_reader.hpp
+  event_handler.hpp
+  gamepad.hpp
+)
+
 set(PS5_HEADERS ps5/ps5pad.hpp)
 set(PROCON_HEADERS nintendo/procon.hpp)
 
@@ -19,7 +25,11 @@ set(ALL_HEADERS
 )
 
 # ソースファイルの変数定義
-set(PAD_SRCS gamepad.cpp)
+set(PAD_SRCS 
+  event_reader.cpp
+  event_handler.cpp
+  gamepad.cpp
+)
 set(PS5_SRCS ps5/ps5pad.cpp)
 set(PROCON_SRCS nintendo/procon.cpp)
 

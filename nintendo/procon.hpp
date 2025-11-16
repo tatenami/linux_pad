@@ -2,6 +2,8 @@
 #define ProController_H
 
 #include "gamepad.hpp"
+#include <cmath>
+#include <limits>
 
 namespace pad {
 
@@ -10,12 +12,7 @@ namespace pad {
     const std::string evdev_procon_usb = "/dev/evdev_procon_usb";
     const std::string evdev_procon_bt  = "/dev/evdev_procon_bt";    
     
-    namespace dev {
-      const int button_num = 18;
-      const int axis_num = 4;
-    }
-
-    const float default_deadzone = 0.05;
+    const float default_deadzone = DEFAULT_DEADZONE;
 
     namespace ButtonID {
       const int B = 0;
@@ -46,7 +43,7 @@ namespace pad {
     }
 
     class ProControllerHandler: public PadEventHandler {
-      private:
+     private:
       int pre_crossXid_;
       int pre_crossYid_;
       uint32_t axis_max_;
@@ -56,7 +53,10 @@ namespace pad {
       void handleButtonEvent() override;
       void handleAxisEvent() override;
 
-      public:
+     public:
+      static constexpr size_t button_count = 18;
+      static constexpr size_t axis_count = 6;
+
       ProControllerHandler();
     };
   }

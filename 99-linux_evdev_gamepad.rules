@@ -1,15 +1,21 @@
-# for DualSense
+# DualSense
 ## usb
+### controller
 SUBSYSTEM=="input", KERNEL=="event*", \
 ENV{ID_INPUT_JOYSTICK}=="1", \
 ATTRS{name}=="Sony Interactive Entertainment DualSense Wireless Controller", \
-SYMLINK+="evdev_dualsense_usb"
+SYMLINK+="evdev_ds_usb"
+
+### motion sensor
+SUBSYSTEM=="input", KERNEL=="event*", \
+ATTRS{name}=="Sony Interactive Entertainment DualSense Wireless Controller Motion Sensors", \
+SYMLINK+="evdev_ds_motion_usb"
 
 ## bluetooth
 SUBSYSTEM=="input", KERNEL=="event*", \
 ENV{ID_INPUT_JOYSTICK}=="1", \
 ATTRS{name}=="DualSense Wireless Controller", \
-SYMLINK+="evdev_dualsense_bt"
+SYMLINK+="evdev_ds_bt"
 
 # for Nintendo Pro Controller
 ## usb

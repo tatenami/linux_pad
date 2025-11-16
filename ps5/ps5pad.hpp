@@ -2,17 +2,16 @@
 #define PS5_BASE_H
 
 #include "gamepad.hpp"
+#include <cmath>
+#include <limits>
 
 namespace pad {
 
   namespace ps5 {
-    const std::string evdev_symlink_usb = "/dev/evdev_dualsense_usb";
-    const std::string evdev_symlink_bt  = "/dev/evdev_dualsense_bt";
-
-    namespace dev {
-      constexpr uint8_t num_buttons = 17;
-      constexpr uint8_t num_axes = 6;
-    }
+    const std::string evdev_symlink_usb = "/dev/evdev_ds_usb";
+    const std::string evdev_symlink_bt  = "/dev/evdev_ds_bt";
+    const std::string evdev_symlink_motion_usb = "/dev/evdev_ds_motion_usb";
+    const std::string evdev_symlink_motion_bt = "/dev/evdev_ds_motion_bt";
 
     const float default_deadzone = 0.05; 
 
@@ -45,6 +44,15 @@ namespace pad {
       constexpr uint8_t R2depth = 5;
     }
 
+    namespace MotionAxisID {
+      constexpr uint8_t AccelX = 0;
+      constexpr uint8_t AccelY = 1;
+      constexpr uint8_t AccelZ = 2;
+      constexpr uint8_t GyroX = 3;
+      constexpr uint8_t GyroY = 4;
+      constexpr uint8_t GyroZ = 5;
+    }
+
     class PS5Handler: public PadEventHandler {
      private:
       uint8_t pre_crossXid_;
@@ -57,7 +65,18 @@ namespace pad {
       void handleAxisEvent() override;
 
      public:
+      static constexpr size_t button_count = 17;
+      static constexpr size_t axis_count = 6;
+
       PS5Handler();
+    };
+
+    class PS5MotionHandler: public MotionEventHandler {
+     private:
+      void handleEvent(EventReader& reader) override;
+
+     public:
+      PS5MotionHandler();
     };
   }
 }

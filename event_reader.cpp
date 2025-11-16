@@ -1,0 +1,87 @@
+#include "event_reader.hpp"
+
+namespace pad {
+  /**
+   * @brief Destroy the Pad Reader
+   * 
+   */
+  EventReader::~EventReader() { disconnect(); }
+
+  /**
+   * @brief open device file of target device ( /dev/eventX )
+   * 
+   */
+  bool EventReader::openDeviceFile(std::string devfile_path) {
+    // read only, non blocking mode 
+    this->fd_ = open(devfile_path.c_str(), O_RDONLY | O_NONBLOCK);
+
+    if (fd_ < 0)
+      return false;
+    else 
+      return true;
+  }
+
+  /**
+   * @brief close `fd` of device file 
+   * 
+   */
+  void EventReader::disconnect() { close(this->fd_); }
+
+  /**
+   * @brief prepare reading device file of `devname`
+   * 
+   * @param devname target device name in `/proc/bus/input/devices`
+   * @retval `true`: succeed in opening device file and ready to read
+   * @retval `false`: fail to searching or opening device file
+   */
+  bool EventReader::connect(std::string devfile_path) {
+    bool is_readable = false;
+    connection_ = false;
+
+    is_readable = openDeviceFile(devfile_path);
+
+    connection_ = is_readable;
+    event_ = {
+      .type =  EventType::None,
+      .code =  0,
+      .value = 0
+    };
+
+    return is_readable;
+  }
+
+  /**
+   * @brief read raw-event from device file
+   * 
+   * @retval true: read raw-event 
+   * @retval false: no raw-event or fail to read  
+   */
+  bool EventReader::readEvent() {
+    if (read(this->fd_, &(raw_event_), sizeof(raw_event_)) > 0) {
+
+      if (raw_event_.type == EV_SYN) {
+        return false;
+      }
+
+      switch (raw_event_.type) {
+        case EV_ABS: event_.type = EventType::Axis;   break;
+        case EV_KEY: event_.type = EventType::Button; break;
+        default: {
+          return false;
+        }
+      }
+
+      event_.code  = raw_event_.code;
+      event_.value = raw_event_.value; 
+
+      return true;
+    }
+    else {
+      // 再読込エラーでなければ，ノンブロッキングread以外のエラーなので接続終了
+      if (errno != EAGAIN)
+        connection_ = false;
+
+      return false;
+    }   
+  }
+}

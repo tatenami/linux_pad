@@ -7,116 +7,16 @@
 #include <linux/input.h>
 #include <sys/ioctl.h>
 
-#include <string>
-#include <memory>
 #include <cmath>
-#include <limits>
-#include <unordered_map>
 #include <vector>
+#include <memory>
 #include <type_traits>
+
+#include "event_reader.hpp"
+#include "event_handler.hpp"
 
 namespace pad {
 
-  constexpr float DEFAULT_DEADZONE = 0.05;
-  constexpr int DEFAULT_BUTTON_NUM = 20;
-  constexpr int DEFALUT_AXIS_NUM = 8;
-  constexpr int MAX_EVENTS = 32;
-
-  enum class EventType {
-    None, 
-    Button, 
-    Axis
-  };
-
-  struct PadEvent {
-    EventType type;
-    uint16_t  code;
-    int32_t   value;
-  };
-
-
-  /**
-   * @brief read event data of game controller 
-   * 
-   */
-  class PadReader {
-   private:
-    std::string path;
-
-    bool connection_;
-    int  fd_{-1};
-    input_event raw_event_;
-    PadEvent    event_;
-
-    bool openDeviceFile(std::string devfile_path);
-
-   public:
-    ~PadReader();
-
-    bool connect(std::string devname);
-    void disconnect();
-    bool readEvent();
-
-    inline bool isConnected() {
-      return this->connection_;
-    }
-
-    inline PadEvent getPadEvent() {
-      return this->event_;
-    }
-  };
-
-
-  struct ButtonEvent {
-    uint8_t id;
-    bool    state;
-  };
-
-  struct AxisEvent {
-    uint8_t id;
-    float   value;
-  };
-
-  // デバイスファイルのCODE->インターフェース用ID の変換テーブルmap
-  using code_id_map = std::unordered_map<uint, uint8_t>;
-
-  /**
-   * @brief 
-   * 
-   */
-  class PadEventHandler {
-   protected:
-    code_id_map id_map_;
-    PadEvent    event_;
-    ButtonEvent button_event_ = {.id = 0, .state = false};
-    AxisEvent axis_event_ = {.id = 0, .value = 0.0f};
-    float deadzone_{DEFAULT_DEADZONE};
-
-    virtual void handleButtonEvent() = 0;
-    virtual void handleAxisEvent() = 0;
-
-   public:
-    void handleEvent(PadReader& reader);
-    void setDeadZone(float deadzone);
-
-    EventType getEventType() { 
-      return this->event_.type; 
-    }
-
-    ButtonEvent& getButtonEvent() {
-      return this->button_event_;
-    }
-
-    AxisEvent& getAxisEvent() {
-      return this->axis_event_;
-    }    
-  };
-
-      /**
-   * @brief 
-   * 
-   * @tparam T 
-   */
   template <typename T>
   class InputData {
    protected: 
@@ -140,7 +40,6 @@ namespace pad {
     }
 
     virtual void clearData() = 0;
-    virtual void update(PadEventHandler& handler) = 0;
   };
 
   class ButtonData: public InputData<bool> {
@@ -153,7 +52,7 @@ namespace pad {
     void clearData() override;
     bool pushed(uint8_t id);
     bool released(uint8_t id);
-    void update(PadEventHandler& handler) override;
+    void update(ButtonEvent event);
 
     void clearEvents() {
       event_count_ = 0;
@@ -175,7 +74,7 @@ namespace pad {
    public:  
     AxisData(uint total_input);
     void clearData() override;
-    void update(PadEventHandler& handler) override;
+    void update(AxisEvent event);
 
     float getValue(uint8_t id) {
       if (id >= input_values_.size()) {
@@ -186,24 +85,47 @@ namespace pad {
     }
   };  
 
+  namespace concept {
+    template <typename ...>
+    using void_t = void;
+
+    // T::ButtonCount が存在するかチェック
+    template<typename T, typename = void>
+    struct has_button_count : std::false_type {};
+
+    template<typename T>
+    struct has_button_count<T, void_t<decltype(T::button_count)>> : std::true_type {};
+
+    // T::AxisCount が存在するかチェック
+    template<typename T, typename = void>
+    struct has_axis_count : std::false_type {};
+    
+    template<typename T>
+    struct has_axis_count<T, void_t<decltype(T::axis_count)>> : std::true_type {};
+  }
+
   // テンプレートクラスが PadEventHandler を継承している制約
   template<typename Handler, 
     typename = std::enable_if_t<std::is_base_of<PadEventHandler, Handler>::value>>
   class BasePad {
+    static_assert(concept::has_button_count<Handler>::value, 
+      "Handler (T_Handler) must define 'static constexpr size_t button_count'");
+
+    static_assert(concept::has_axis_count<Handler>::value, 
+      "Handler (T_Handler) must define 'static constexpr size_t axis_count'");
+
    private:
     std::unique_ptr<PadEventHandler> handler_;
-    PadReader   reader_;
+    EventReader   reader_;
     ButtonData  buttons_;
     AxisData    axes_;
     bool is_connected_{false};
     std::string devfile_path_;
 
    public:
-    BasePad(std::string devfile_path, 
-            int button_num = DEFAULT_BUTTON_NUM, 
-            int axis_num = DEFALUT_AXIS_NUM):
-      buttons_(button_num),
-      axes_(axis_num)
+    BasePad(std::string devfile_path):
+      buttons_(Handler::button_count),
+      axes_(Handler::axis_count)
     {
       this->devfile_path_ = devfile_path;
       this->handler_ = std::make_unique<Handler>();
@@ -260,11 +182,13 @@ namespace pad {
 
         switch (type) {
           case EventType::Button: {
-            this->buttons_.update(*(this->handler_));
+            ButtonEvent event = (this->handler_)->getButtonEvent();
+            this->buttons_.update(event);
             break;
           }
           case EventType::Axis: {
-            this->axes_.update(*(this->handler_));
+            AxisEvent event = (this->handler_)->getAxisEvent();
+            this->axes_.update(event);
             break;
           }
           default:
@@ -294,14 +218,88 @@ namespace pad {
     typename = std::enable_if_t<std::is_base_of<PadEventHandler, Handler>::value>>
   class GamePad: public BasePad<Handler> {
    public:
-    GamePad(std::string devfile_path,
-            int button_num = DEFAULT_BUTTON_NUM, 
-            int axis_num = DEFALUT_AXIS_NUM):
-      BasePad<Handler>(devfile_path, button_num, axis_num)
+    GamePad(std::string devfile_path):
+      BasePad<Handler>(devfile_path)
     {
       
     }
   };
 
+  template <typename Handler,
+    typename = std::enable_if_t<std::is_base_of<MotionEventHandler, Handler>::value>>
+  class BaseMotionSensor {
+   private:
+    std::unique_ptr<MotionEventHandler> handler_;
+    EventReader   reader_;
+    AxisData    axes_;
+    bool is_connected_{false};
+    std::string devfile_path_;
+
+   public:
+    BaseMotionSensor(std::string devfile_path, 
+            int axis_num = DEFALUT_AXIS_NUM):
+      axes_(axis_num)
+    {
+      this->devfile_path_ = devfile_path;
+      this->handler_ = std::make_unique<Handler>();
+      this->is_connected_ = this->reader_.connect(devfile_path);
+    }
+
+    ~BaseMotionSensor() {
+      this->reader_.disconnect();
+    }
+
+    bool isConnected() {
+      return is_connected_;
+    }
+
+    bool reconnect() {
+      if (this->is_connected_) {
+        return false;
+      }
+
+      this->reader_.disconnect();
+      return this->reader_.connect(this->devfile_path_);
+    }
+
+    void resizeInputTotal(int total_axis) {
+      this->axes_.resize(total_axis);
+    }
+
+    std::vector<float> getAxisVec() {
+      return this->axes_.getVector();
+    }
+
+    void update() {
+      if (!(this->reader_.isConnected())) {
+        this->is_connected_ = false;
+        this->axes_.clearData();
+        return;
+      }
+
+      while (this->reader_.readEvent()) {
+        this->handler_->handleEvent(this->reader_);
+        AxisEvent event = (this->handler_)->getAxisEvent();
+        this->axes_.update(event);
+      }
+    }
+
+    float axisValue(uint8_t id) {
+      return this->axes_.getValue(id);
+    }
+  };
+
+  template <typename Handler,
+    typename = std::enable_if_t<std::is_base_of<MotionEventHandler, Handler>::value>>
+  class MotionSensor: public BaseMotionSensor<Handler> {
+   public:
+    MotionSensor(std::string devfile_path,
+            int axis_num = DEFALUT_AXIS_NUM):
+      BaseMotionSensor<Handler>(devfile_path, axis_num)
+    {
+      
+    }
+  };
 }
+
 #endif // GAMEPAD_H

@@ -130,5 +130,26 @@ namespace pad {
       button_event_.id = id_map_[event_.code];
       button_event_.state = (event_.value == 1) ? true : false;
     }
+
+    PS5MotionHandler::PS5MotionHandler() {
+      id_map_ = code_id_map {
+        {ABS_X,  MotionAxisID::AccelX},
+        {ABS_Y,  MotionAxisID::AccelY},
+        {ABS_Z,  MotionAxisID::AccelZ},
+        {ABS_RX, MotionAxisID::GyroX},
+        {ABS_RY, MotionAxisID::GyroY},
+        {ABS_RZ, MotionAxisID::GyroZ},
+      };
+    }
+
+    void PS5MotionHandler::handleEvent(EventReader& reader) {
+      this->event_ = reader.getEvent();
+
+      if (event_.type != EventType::Axis)
+        return;
+
+      this->axis_event_.id = id_map_[event_.code];
+      this->axis_event_.value = static_cast<float>(event_.value);
+    }
   }
 }
