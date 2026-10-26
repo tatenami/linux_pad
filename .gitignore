@@ -1,0 +1,4 @@
+test/*
+event
+.clangd
+compile_flags.txt
