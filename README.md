@@ -23,13 +23,22 @@ Linux でゲームコントローラの情報を取得する C++ ライブラリ
  - ビルドしたライブラリのインストール
  - ライブラリキャッシュの更新
  - udev の `.rules` のインストール  
-  
+
+既定では，ヘッダファイルは `/usr/local/include/pad/`，共有ライブラリは
+`/usr/local/lib/libgamepad.so` にインストールされる。
+
+コントローラごとの公開ヘッダは `pad/` 直下に配置される。
+
+ - PS5: `pad/ps5.hpp`
+ - Pro Controller: `pad/procon.hpp`
+
 ## 使い方
 ### サンプルコード
 ```cpp
 // pad/ の各コントローラ用ライブラリを include
 #include <pad/ps5.hpp>
 #include <cstdio>
+#include <unistd.h>
 
 // コントローラに関連する処理は "pad" という名前空間に記述
 // pad 以下に各コントローラの名前空間
@@ -73,9 +82,13 @@ int main() {
 
 ### コンパイル
 ```bash
-g++ -o main main.cpp -lgamepad
+g++ -std=c++20 -o main main.cpp -lgamepad
 ```
-`-lgamepad` のリンクオプションにより，共有ライブラリをリンクする必要がある
+`-lgamepad` のリンクオプションにより，共通処理を含む共有ライブラリをリンクする。
+PS5 や Pro Controller 固有の処理は，各コントローラのヘッダから読み込まれる。
+
+Pro Controller を使用する場合は `#include <pad/procon.hpp>` を指定し，
+`GamePad<procon::ProControllerHandler>` を使用する。
 
 ## 備考
  - その他コントローラの追加を予定
