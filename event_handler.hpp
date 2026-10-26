@@ -1,6 +1,7 @@
 #ifndef EVNET_HANDLER_H
 #define EVNET_HANDLER_H
 
+#include <cstdint>
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdint.h>
@@ -21,7 +22,7 @@ namespace pad {
   constexpr int MAX_EVENTS = 32;
 
   // デバイスファイルのCODE->インターフェース用ID の変換テーブルmap
-  using code_id_map = std::unordered_map<uint, uint8_t>;
+  using code_id_map = std::unordered_map<uint32_t, uint8_t>;
 
   class PadEventHandler {
    protected:

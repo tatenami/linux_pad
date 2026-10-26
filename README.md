@@ -11,7 +11,7 @@ Linux でゲームコントローラの情報を取得する C++ ライブラリ
  - スティックの変化範囲の正規化 (range: -1.0f ~ 1.0f)
 
 ## requirements
- - C++ 対応コンパイラ (support C++14)
+ - C++ 対応コンパイラ (support C++20)
  - cmake
  - make
 
@@ -28,7 +28,7 @@ Linux でゲームコントローラの情報を取得する C++ ライブラリ
 ### サンプルコード
 ```cpp
 // pad/ の各コントローラ用ライブラリを include
-#include "pad/ps5pad.hpp"
+#include <pad/ps5.hpp>
 #include <cstdio>
 
 // コントローラに関連する処理は "pad" という名前空間に記述
@@ -43,7 +43,7 @@ int main() {
   // GamePad クラスのテンプレートにはコントローラに対応したハンドラの型を指定
   // デバイスファイルのパスを引数として初期化
   //   /dev/input/eventX 直接指定でも可
-  GamePad<ps5::PS5Handler> ps5(ps5::evdev_symlink_usb);
+  GamePad<ps5::PS5Handler> ps5(ps5::Device::PAD_USB);
 
   if (!ps5.isConnected()) {
     printf("[ERROR] Failed to connect controller.\n");

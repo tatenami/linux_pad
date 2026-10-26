@@ -1,4 +1,5 @@
-#include "ps5pad.hpp"
+#include <cstdint>
+#include <cmath>
 
 namespace pad {
   namespace ps5 {
@@ -6,6 +7,14 @@ namespace pad {
       // 内部でのみ使用するAxisID
       constexpr uint8_t internal_axis_crossX = 6;
       constexpr uint8_t internal_axis_crossY = 7;
+
+      constexpr uint32_t STICK_MAX = 255;
+      constexpr float RESOLUTION_ACC_PER_G = 8192.0f;
+      constexpr float RESOLUTION_DEG_PER_S = 1024.0f; 
+
+      auto is_gyro_id = [](int id) {
+        return (id >= MotionAxisID::GyroX);
+      };
     }
 
     PS5Handler::PS5Handler() {
@@ -35,18 +44,17 @@ namespace pad {
         {ABS_HAT0Y,  internal_axis_crossY},
       };
 
-      this->axis_max_ = std::numeric_limits<uint8_t>::max();
       this->deadzone_ = default_deadzone;
     }
 
     void PS5Handler::handleCrossXData(int32_t val) {
       if (val > 0) {
         this->pre_crossXid_ = ButtonID::right;
-        button_event_ = {ButtonID::right, true};
+        button_event_ = { .id = ButtonID::right, .state = true};
       }
       else if (val < 0)  {
         this->pre_crossXid_ = ButtonID::left;
-        button_event_ = {ButtonID::left, true};
+        button_event_ = { .id = ButtonID::left, .state = true};
       }
       else {
         switch (this->pre_crossXid_) {
@@ -66,11 +74,11 @@ namespace pad {
     void PS5Handler::handleCrossYData(int32_t val) {
       if (val > 0) {
         this->pre_crossXid_ = ButtonID::down;
-        button_event_ = {ButtonID::down, true};
+        button_event_ = { .id = ButtonID::down, .state = true};
       }
       else if (val < 0)  {
         this->pre_crossXid_ = ButtonID::up;
-        button_event_ = {ButtonID::up, true};
+        button_event_ = { .id = ButtonID::up, .state = true};
       }
       else {
         switch (this->pre_crossXid_) {
@@ -104,10 +112,10 @@ namespace pad {
         }
       }
 
-      // Stick 値の範囲を-axis_max <--> axis_max に拡張
+      // Stick 値の範囲を-STICK_MAX <--> STICK_MAX に拡張
+      // origin: 0 ~ 255 -> -255 ~ 255
       if (id != AxisID::L2depth && id != AxisID::R2depth) {
-        val *= 2;
-        val -= axis_max_;
+        val = (val << 1) - STICK_MAX;
       }
 
       switch (id) {
@@ -119,8 +127,10 @@ namespace pad {
         default: {
           // axis値を-1.0 <--> 1.0 に
           axis_event_.id = id;
-          float fval = static_cast<float>(val) / axis_max_;
-          if (fabs(fval) < deadzone_) fval = 0.0;
+          float fval = static_cast<float>(val) / STICK_MAX;
+          if (fabs(fval) < deadzone_) 
+            fval = 0.0;
+          
           axis_event_.value = fval;
         }
       }
@@ -140,6 +150,8 @@ namespace pad {
         {ABS_RY, MotionAxisID::GyroY},
         {ABS_RZ, MotionAxisID::GyroZ},
       };
+
+      std::printf("[PS5MotionHandler] please run with 'sudo' to read event.\n");
     }
 
     void PS5MotionHandler::handleEvent(EventReader& reader) {
@@ -149,7 +161,17 @@ namespace pad {
         return;
 
       this->axis_event_.id = id_map_[event_.code];
-      this->axis_event_.value = static_cast<float>(event_.value);
+
+      int32_t val = event_.value;
+      float fval;
+      if (is_gyro_id(axis_event_.id)) {
+        fval = static_cast<float>(val) / RESOLUTION_DEG_PER_S; 
+      }
+      else {
+        fval = static_cast<float>(val) / RESOLUTION_ACC_PER_G;
+      }
+
+      this->axis_event_.value = fval;
     }
   }
 }

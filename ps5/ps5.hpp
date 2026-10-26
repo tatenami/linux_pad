@@ -3,15 +3,17 @@
 
 #include "gamepad.hpp"
 #include <cmath>
-#include <limits>
 
 namespace pad {
 
   namespace ps5 {
-    const std::string evdev_symlink_usb = "/dev/evdev_ds_usb";
-    const std::string evdev_symlink_bt  = "/dev/evdev_ds_bt";
-    const std::string evdev_symlink_motion_usb = "/dev/evdev_ds_motion_usb";
-    const std::string evdev_symlink_motion_bt = "/dev/evdev_ds_motion_bt";
+
+    namespace Device {
+      const std::string PAD_USB = "/dev/evdev_ds_usb";
+      const std::string PAD_BT  = "/dev/evdev_ds_bt";
+      const std::string MOTION_USB = "/dev/evdev_ds_motion_usb";
+      const std::string MOTION_BT  = "/dev/evdev_ds_motion_bt";
+    }
 
     const float default_deadzone = 0.05; 
 
@@ -57,7 +59,6 @@ namespace pad {
      private:
       uint8_t pre_crossXid_;
       uint8_t pre_crossYid_;
-      int32_t axis_max_;
 
       void handleCrossXData(int32_t val);
       void handleCrossYData(int32_t val);
@@ -80,5 +81,7 @@ namespace pad {
     };
   }
 }
+
+#include "impl/ps5_impl.ipp"
 
 #endif // XXX_H

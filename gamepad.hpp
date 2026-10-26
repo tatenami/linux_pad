@@ -3,14 +3,14 @@
 
 #include <fcntl.h>
 #include <unistd.h>
-#include <stdint.h>
 #include <linux/input.h>
 #include <sys/ioctl.h>
 
-#include <cmath>
+#include <cstdint>
 #include <vector>
 #include <memory>
 #include <type_traits>
+#include <concepts> // require C++20
 
 #include "event_reader.hpp"
 #include "event_handler.hpp"
@@ -85,35 +85,25 @@ namespace pad {
     }
   };  
 
-  namespace concept {
-    template <typename ...>
-    using void_t = void;
+  template <class Handler>
+  concept AttachablePadHandler = requires {
+    // 1. PadEventHandler を継承している
+    requires std::derived_from<Handler, PadEventHandler>;
 
-    // T::ButtonCount が存在するかチェック
-    template<typename T, typename = void>
-    struct has_button_count : std::false_type {};
+    // 2. 純粋仮想イベントハンドラが実装されている
+    //  - void handleButtonEvent()
+    //  - void handleAxisEvent()
+    requires (!std::is_abstract_v<Handler>);
 
-    template<typename T>
-    struct has_button_count<T, void_t<decltype(T::button_count)>> : std::true_type {};
+    // 3. static constexpr size_t button_count が定義されている
+    { Handler::button_count } -> std::convertible_to<size_t>;
 
-    // T::AxisCount が存在するかチェック
-    template<typename T, typename = void>
-    struct has_axis_count : std::false_type {};
-    
-    template<typename T>
-    struct has_axis_count<T, void_t<decltype(T::axis_count)>> : std::true_type {};
-  }
+    // 4. static constexpr size_t axis_count が定義されている
+    { Handler::axis_count } -> std::convertible_to<size_t>;
+  };
 
-  // テンプレートクラスが PadEventHandler を継承している制約
-  template<typename Handler, 
-    typename = std::enable_if_t<std::is_base_of<PadEventHandler, Handler>::value>>
+  template <AttachablePadHandler Handler>
   class BasePad {
-    static_assert(concept::has_button_count<Handler>::value, 
-      "Handler (T_Handler) must define 'static constexpr size_t button_count'");
-
-    static_assert(concept::has_axis_count<Handler>::value, 
-      "Handler (T_Handler) must define 'static constexpr size_t axis_count'");
-
    private:
     std::unique_ptr<PadEventHandler> handler_;
     EventReader   reader_;
@@ -214,8 +204,7 @@ namespace pad {
     }
   };
 
-  template <typename Handler,
-    typename = std::enable_if_t<std::is_base_of<PadEventHandler, Handler>::value>>
+  template <AttachablePadHandler Handler>
   class GamePad: public BasePad<Handler> {
    public:
     GamePad(std::string devfile_path):
@@ -225,14 +214,20 @@ namespace pad {
     }
   };
 
-  template <typename Handler,
-    typename = std::enable_if_t<std::is_base_of<MotionEventHandler, Handler>::value>>
+
+  template <class Handler>
+  concept AttachableMotionHandler = requires(Handler h) {
+    // 1. MotionEventHandler を継承している
+    requires std::derived_from<Handler, MotionEventHandler>;
+  };
+
+  template <AttachableMotionHandler Handler>
   class BaseMotionSensor {
    private:
     std::unique_ptr<MotionEventHandler> handler_;
-    EventReader   reader_;
+    EventReader reader_;
     AxisData    axes_;
-    bool is_connected_{false};
+    bool        is_connected_{false};
     std::string devfile_path_;
 
    public:
@@ -289,8 +284,7 @@ namespace pad {
     }
   };
 
-  template <typename Handler,
-    typename = std::enable_if_t<std::is_base_of<MotionEventHandler, Handler>::value>>
+  template <AttachableMotionHandler Handler>
   class MotionSensor: public BaseMotionSensor<Handler> {
    public:
     MotionSensor(std::string devfile_path,
